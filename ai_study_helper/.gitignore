@@ -1,1 +1,2 @@
-.env=GROQ_API_KEY=your_new_key_here
+.env
+serviceAccountKey.json

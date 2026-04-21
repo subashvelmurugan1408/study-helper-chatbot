@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Helper — Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+  <!-- React -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Firebase init (plain JS, runs before React) -->
+  <script>
+    // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────
+    const firebaseConfig = {
+  apiKey: "AIzaSyDxtEgF5_YRMGtF1ywDz9rRJ3q1AIJr240",
+  authDomain: "study-helper-chatbot.firebaseapp.com",
+  projectId: "study-helper-chatbot",
+  storageBucket: "study-helper-chatbot.firebasestorage.app",
+  messagingSenderId: "576854641475",
+  appId: "1:576854641475:web:40eda4b84ad5024ca4fdf6",
+  measurementId: "G-6G6WX3YENT"
+};
+    // ─────────────────────────────────────────────────
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+  </script>
+</head>
+<body class="bg-slate-50">
+
+<div id="root"></div>
+
+<script type="text/babel">
+  const { useState } = React;
+
+  // ── Friendly Firebase error messages ─────────────────────────────────────────
+  function friendlyError(code) {
+    const map = {
+      "auth/invalid-email":        "Invalid email address.",
+      "auth/user-not-found":       "No account found with this email.",
+      "auth/wrong-password":       "Incorrect password.",
+      "auth/invalid-credential":   "Incorrect email or password.",
+      "auth/email-already-in-use": "Email already registered. Try logging in.",
+      "auth/weak-password":        "Password must be at least 6 characters.",
+      "auth/too-many-requests":    "Too many attempts. Please try again later.",
+    };
+    return map[code] || "Something went wrong. Please try again.";
+  }
+
+  // ── Eye icon for show/hide password ──────────────────────────────────────────
+  function EyeIcon({ open }) {
+    return open ? (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+    ) : (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+      </svg>
+    );
+  }
+
+  // ── Reusable input field ──────────────────────────────────────────────────────
+  function InputField({ label, type, value, onChange, placeholder, onKeyDown }) {
+    const [showPw, setShowPw] = useState(false);
+    const isPassword = type === "password";
+    return (
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+          {label}
+        </label>
+        <div className="relative">
+          <input
+            type={isPassword && showPw ? "text" : type}
+            value={value}
+            onChange={onChange}
+            onKeyDown={onKeyDown}
+            placeholder={placeholder}
+            className="w-full px-4 py-2.5 pr-10 border border-slate-200 rounded-xl text-sm
+                       bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500
+                       focus:bg-white focus:border-transparent transition-all duration-150
+                       placeholder-slate-400"
+          />
+          {isPassword && (
+            <button
+              type="button"
+              onClick={() => setShowPw(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <EyeIcon open={showPw} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main Login/Signup page ────────────────────────────────────────────────────
+  function LoginPage() {
+    const [tab, setTab]           = useState("login");
+    const [email, setEmail]       = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError]       = useState("");
+    const [loading, setLoading]   = useState(false);
+
+    // Switch between Login and Sign Up tabs
+    function switchTab(t) {
+      setTab(t);
+      setError("");
+      setEmail("");
+      setPassword("");
+    }
+
+    // Handle Login or Sign Up submit
+    async function handleSubmit() {
+      if (!email || !password) {
+        setError("Please fill in all fields.");
+        return;
+      }
+      setError("");
+      setLoading(true);
+      try {
+        if (tab === "login") {
+          await auth.signInWithEmailAndPassword(email, password);
+        } else {
+          await auth.createUserWithEmailAndPassword(email, password);
+        }
+        // ✅ Success — redirect to chat
+        window.location.href = "/chat";
+      } catch (e) {
+        setError(friendlyError(e.code));
+        setLoading(false);
+      }
+    }
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col">
+
+        {/* Header */}
+        <header className="bg-blue-600 text-white py-4 px-6 shadow-sm">
+          <div className="max-w-6xl mx-auto flex items-center gap-2">
+            <span className="text-xl">🎓</span>
+            <h1 className="text-lg font-semibold tracking-tight">AI Study Helper</h1>
+          </div>
+        </header>
+
+        {/* Main */}
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-md">
+
+            <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
+
+              {/* Top accent */}
+              <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+
+              <div className="p-8">
+
+                {/* Heading */}
+                <div className="mb-6 text-center">
+                  <h2 className="text-2xl font-bold text-slate-800">
+                    {tab === "login" ? "Welcome back" : "Create account"}
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {tab === "login"
+                      ? "Login to continue studying"
+                      : "Sign up and start learning"}
+                  </p>
+                </div>
+
+                {/* Tab switcher */}
+                <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
+                  <button
+                    onClick={() => switchTab("login")}
+                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                      tab === "login"
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={() => switchTab("signup")}
+                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                      tab === "signup"
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    Sign Up
+                  </button>
+                </div>
+
+                {/* Form fields */}
+                <div className="space-y-4">
+                  <InputField
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                  <InputField
+                    label="Password"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                  />
+                </div>
+
+                {/* Error message */}
+                {error && (
+                  <div className="mt-4 px-4 py-2.5 bg-red-50 border border-red-100 rounded-xl">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
+
+                {/* Submit button */}
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="mt-5 w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800
+                             disabled:opacity-60 disabled:cursor-not-allowed
+                             text-white font-semibold py-2.5 rounded-xl
+                             transition-colors duration-150 text-sm shadow-sm"
+                >
+                  {loading
+                    ? "Please wait…"
+                    : tab === "login" ? "Login" : "Create Account"}
+                </button>
+
+                {/* Switch tab link */}
+                <p className="text-center text-sm text-slate-500 mt-5">
+                  {tab === "login" ? "Don't have an account? " : "Already have an account? "}
+                  <button
+                    onClick={() => switchTab(tab === "login" ? "signup" : "login")}
+                    className="text-blue-600 font-semibold hover:underline"
+                  >
+                    {tab === "login" ? "Sign up" : "Login"}
+                  </button>
+                </p>
+
+              </div>
+            </div>
+
+            <p className="text-center text-xs text-slate-400 mt-6">
+              🔒 Your data is secure and private
+            </p>
+
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(<LoginPage />);
+</script>
+
+</body>
+</html>
