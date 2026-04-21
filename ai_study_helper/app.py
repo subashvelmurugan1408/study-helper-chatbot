@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 import os
 from groq import Groq
+from flask import Flask, render_template, request, jsonify, redirect
 
 # Load environment variables
 load_dotenv()
@@ -10,12 +11,18 @@ load_dotenv()
 app = Flask(__name__)
 
 # Create Groq client
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-# Home route
+GROQ_API_KEY=your_groq_key_here
 @app.route("/")
 def home():
+    return redirect("/login")
+
+@app.route("/chat")
+def chat():
     return render_template("index.html")
+
+@app.route("/login")
+def login():
+    return render_template("login.html")
 
 # Ask route
 @app.route("/api/ask", methods=["POST"])
