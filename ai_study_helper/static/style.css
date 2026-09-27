@@ -177,3 +177,23 @@ body {
   margin-top: 10px;
   min-height: 18px;
 }
+.thinking-msg {
+    color: #777;
+    font-style: italic;
+    opacity: 0.8;
+    animation: thinkingPulse 1.2s infinite;
+}
+
+@keyframes thinkingPulse {
+    0% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.4;
+    }
+}
