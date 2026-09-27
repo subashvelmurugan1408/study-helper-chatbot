@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Create Groq client
-client = Groq(api_key=os.getenv("GROQ_API_KEY")) 
+client = Groq(os.getenv("GROQ_API_KEY")) 
 @app.route("/")
 def home():
     return redirect("/login")
@@ -42,7 +42,7 @@ def ask():
         """
 
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
