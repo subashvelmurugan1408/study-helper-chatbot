@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Create Groq client
-client = Groq(os.getenv("GROQ_API_KEY")) 
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 @app.route("/")
 def home():
     return redirect("/login")
