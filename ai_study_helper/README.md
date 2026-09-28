@@ -1,8 +1,10 @@
 # 🎓 AI Study Helper
 
-An AI-powered study assistant built with Flask, Groq (LLaMA 3), Firebase Authentication, and a React + Tailwind CSS frontend.
+An AI-powered study assistant built with Flask, Groq (gpt-oss), Firebase Authentication, and a React + Tailwind CSS frontend.
 
 ---
+🚀live demo
+https://study-helper-chatbot.onrender.com
 
 ## ✨ Features
 
